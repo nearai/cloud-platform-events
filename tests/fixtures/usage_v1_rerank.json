@@ -1,0 +1,9 @@
+{
+  "organization_id": "7d1c3b8e-2f4a-4e5b-9a61-0c2d8e4f1a01",
+  "workspace_id": "3a9e6f10-5b7c-4d2e-8f13-9b0a1c2d3e02",
+  "api_key_id": "c4b2a0f9-8e7d-4c6b-a5f4-1e2d3c4b5a03",
+  "type": "rerank",
+  "model": "Qwen/Qwen3-Embedding-0.6B",
+  "input_tokens": 42,
+  "id": "rerank-test-001"
+}
