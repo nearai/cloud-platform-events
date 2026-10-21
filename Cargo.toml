@@ -1,0 +1,16 @@
+[package]
+name = "cloud-platform-events"
+version = "1.1.0"
+edition = "2021"
+description = "Usage message envelope and payload types shared by cloud-platform producers and consumer"
+license-file = "LICENSE"
+repository = "https://github.com/nearai/cloud-platform-events"
+publish = false
+
+[dependencies]
+chrono = { version = "0.4", features = ["serde"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+
+[dev-dependencies]
+uuid = "1"
