@@ -13,3 +13,16 @@ it by git tag; nobody hand-writes the JSON.
 - Lint: `cargo clippy --all-targets -- -D warnings`.
 
 Schema rules and the versioning process are in `.claude/rules/events-versioning.md`.
+
+## Compatibility and rollout
+
+Version 2 adds the optional `admission_id` field and the `AudioTranscription` variant.
+Rust callers must initialize the new field (usually `None` for legacy reports) and update
+exhaustive matches. This is a source API change, so the crate's major version increases.
+The JSON envelope remains v1: the new field is omitted when absent, and existing payloads
+keep their meaning and shape.
+
+Upgrade the cloud-platform consumer before producers emit admissions or audio receipts.
+An older reader ignores `admission_id` and cannot settle the associated reservation; it
+retains an unknown audio variant for replay after upgrade. Pin the reviewed commit for
+companion testing, and publish an immutable v2.0.0 tag before production rollout.
