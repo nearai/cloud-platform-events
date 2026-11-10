@@ -6,6 +6,8 @@ it by git tag; nobody hand-writes the JSON.
 
 - `InternalUsageReport`: the body of cloud-api's `POST /v1/internal/usage`, copied from
   cloud-api at commit a77d2e2a (serde parts only).
+- `InternalUsageReport.admission_id`: optional execution UUID for reservation settlement; provider `id` remains correlation data.
+- `AudioTranscription`: rounded-up `duration_seconds` at the audio model rate.
 - `UsageEnvelope` / `parse_message`: versioned envelope and tolerant reader.
 - Tests: `cargo test` (round-trip, tolerant reader, cloud-api body shape).
 - Lint: `cargo clippy --all-targets -- -D warnings`.

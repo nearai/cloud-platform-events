@@ -23,6 +23,9 @@ pub struct InternalUsageReport {
     /// Optional provider-side discount as a fraction of list price (`0.2` = 20% off).
     #[serde(skip_serializing_if = "Option::is_none")]
     pub discount_to_user: Option<f64>,
+    /// Server-generated UUID identifying a monetary admission, independent of provider `id`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub admission_id: Option<String>,
     /// The usage payload.
     #[serde(flatten)]
     pub usage: RecordUsageApiRequest,
@@ -49,6 +52,14 @@ pub enum RecordUsageApiRequest {
     ImageGeneration {
         model: String,
         image_count: i32,
+        id: String,
+        #[serde(flatten)]
+        provider_attribution: ProviderAttribution,
+    },
+    /// Transcription, billed by rounded-up duration seconds rather than tokens.
+    AudioTranscription {
+        model: String,
+        duration_seconds: i32,
         id: String,
         #[serde(flatten)]
         provider_attribution: ProviderAttribution,
