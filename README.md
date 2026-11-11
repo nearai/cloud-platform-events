@@ -22,7 +22,10 @@ exhaustive matches. This is a source API change, so the crate's major version in
 The JSON envelope remains v1: the new field is omitted when absent, and existing payloads
 keep their meaning and shape.
 
-Upgrade the cloud-platform consumer before producers emit admissions or audio receipts.
-An older reader ignores `admission_id` and cannot settle the associated reservation; it
-retains an unknown audio variant for replay after upgrade. Pin the reviewed commit for
-companion testing, and publish an immutable v2.0.0 tag before production rollout.
+All cloud-platform consumers must be upgraded before any producer emits admissions or
+audio receipts. An older reader ignores `admission_id` and cannot settle the associated
+reservation. Unknown audio variants fail processing and move to the dead-letter queue
+after the configured receive limit (currently five). If this has already happened,
+operators must redrive those messages after upgrading; replay is not automatic.
+Pin the reviewed commit for companion testing, and publish an immutable v2.0.0 tag
+before production rollout.
