@@ -1,13 +1,23 @@
 # cloud-platform-events
 
-Usage message schema for cloud-platform. This crate is the single owner of the envelope
-and payload types. Producers (inference-proxy) and the consumer (cloud-platform) depend on
-it by git tag; nobody hand-writes the JSON.
+Shared Rust types for usage reports and versioned message envelopes.
 
-- `InternalUsageReport`: the body of cloud-api's `POST /v1/internal/usage`, copied from
-  cloud-api at commit a77d2e2a (serde parts only).
-- `UsageEnvelope` / `parse_message`: versioned envelope and tolerant reader.
-- Tests: `cargo test` (round-trip, tolerant reader, cloud-api body shape).
-- Lint: `cargo clippy --all-targets -- -D warnings`.
+- `InternalUsageReport` carries usage facts and optional admission correlation.
+- `admission_id` identifies a reservation; the provider identifier remains separate.
+- `AudioTranscription` carries a rounded-up duration in seconds.
+- `UsageEnvelope` and `parse_message` provide a versioned envelope and tolerant reader.
 
-Schema rules and the versioning process are in `.claude/rules/events-versioning.md`.
+## Compatibility
+
+Version 2 adds the optional admission field and the transcription variant. Rust callers
+must initialize the added field and update exhaustive matches, so this is a major source
+API change. The JSON envelope remains version 1. The optional field is omitted when
+absent, preserving existing report serialization.
+
+Consumers must support the new variant to deserialize transcription events. Older
+readers can ignore the optional field, but cannot use it to correlate reservations.
+
+## Validation
+
+Run `cargo test` for round-trip, reader, and duration checks, and
+`cargo clippy --all-targets -- -D warnings` for lint validation.
