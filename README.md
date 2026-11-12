@@ -1,31 +1,23 @@
 # cloud-platform-events
 
-Usage message schema for cloud-platform. This crate is the single owner of the envelope
-and payload types. Producers (inference-proxy) and the consumer (cloud-platform) depend on
-it by git tag; nobody hand-writes the JSON.
+Shared Rust types for usage reports and versioned message envelopes.
 
-- `InternalUsageReport`: the body of cloud-api's `POST /v1/internal/usage`, copied from
-  cloud-api at commit a77d2e2a (serde parts only).
-- `InternalUsageReport.admission_id`: optional execution UUID for reservation settlement; provider `id` remains correlation data.
-- `AudioTranscription`: rounded-up `duration_seconds` at the audio model rate.
-- `UsageEnvelope` / `parse_message`: versioned envelope and tolerant reader.
-- Tests: `cargo test` (round-trip, tolerant reader, cloud-api body shape).
-- Lint: `cargo clippy --all-targets -- -D warnings`.
+- `InternalUsageReport` carries usage facts and optional admission correlation.
+- `admission_id` identifies a reservation; the provider identifier remains separate.
+- `AudioTranscription` carries a rounded-up duration in seconds.
+- `UsageEnvelope` and `parse_message` provide a versioned envelope and tolerant reader.
 
-Schema rules and the versioning process are in `.claude/rules/events-versioning.md`.
+## Compatibility
 
-## Compatibility and rollout
+Version 2 adds the optional admission field and the transcription variant. Rust callers
+must initialize the added field and update exhaustive matches, so this is a major source
+API change. The JSON envelope remains version 1. The optional field is omitted when
+absent, preserving existing report serialization.
 
-Version 2 adds the optional `admission_id` field and the `AudioTranscription` variant.
-Rust callers must initialize the new field (usually `None` for legacy reports) and update
-exhaustive matches. This is a source API change, so the crate's major version increases.
-The JSON envelope remains v1: the new field is omitted when absent, and existing payloads
-keep their meaning and shape.
+Consumers must support the new variant to deserialize transcription events. Older
+readers can ignore the optional field, but cannot use it to correlate reservations.
 
-All cloud-platform consumers must be upgraded before any producer emits admissions or
-audio receipts. An older reader ignores `admission_id` and cannot settle the associated
-reservation. Unknown audio variants fail processing and move to the dead-letter queue
-after the configured receive limit (currently five). If this has already happened,
-operators must redrive those messages after upgrading; replay is not automatic.
-Pin the reviewed commit for companion testing, and publish an immutable v2.0.0 tag
-before production rollout.
+## Validation
+
+Run `cargo test` for round-trip, reader, and duration checks, and
+`cargo clippy --all-targets -- -D warnings` for lint validation.
