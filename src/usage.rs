@@ -5,6 +5,11 @@
 //! - `RecordUsageApiRequest`: `crates/services/src/usage/ports.rs`
 //! - `ProviderAttribution` and the served-provider enums: `crates/services/src/usage/provider_attribution.rs`
 //!
+//! `RecordUsageApiRequest::AudioTranscription` is not in that commit. On 2026-11-13 it was
+//! checked against the same variant in an unmerged cloud-api change to
+//! `crates/services/src/usage/ports.rs`. Its wire shape is fixed by
+//! `tests/fixtures/usage_v1_audio_transcription.json`.
+//!
 //! Only the serde-relevant parts are copied. Field names, tags, renames and flatten
 //! are identical, so the JSON wire format is the cloud-api body. Deserialization is
 //! tolerant: unknown fields are ignored.
@@ -81,6 +86,15 @@ pub enum RecordUsageApiRequest {
     PrivacyClassify {
         model: String,
         input_tokens: i32,
+        id: String,
+        #[serde(flatten)]
+        provider_attribution: ProviderAttribution,
+    },
+    /// Audio transcription, billed by audio duration.
+    AudioTranscription {
+        model: String,
+        /// Audio duration in whole seconds. The consumer validates positivity.
+        duration_seconds: i32,
         id: String,
         #[serde(flatten)]
         provider_attribution: ProviderAttribution,

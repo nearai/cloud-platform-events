@@ -1,6 +1,6 @@
 [package]
 name = "cloud-platform-events"
-version = "1.1.0"
+version = "1.2.0"
 edition = "2021"
 description = "Usage message envelope and payload types shared by cloud-platform producers and consumer"
 license-file = "LICENSE"
