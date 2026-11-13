@@ -5,7 +5,8 @@ and payload types. Producers (inference-proxy) and the consumer (cloud-platform)
 it by git tag; nobody hand-writes the JSON.
 
 - `InternalUsageReport`: the body of cloud-api's `POST /v1/internal/usage`, copied from
-  cloud-api at commit a77d2e2a (serde parts only).
+  cloud-api at commit a77d2e2a (serde parts only). The `audio_transcription` variant is
+  newer than that commit; see the header of `src/usage.rs`.
 - `UsageEnvelope` / `parse_message`: versioned envelope and tolerant reader.
 - Tests: `cargo test` (round-trip, tolerant reader, cloud-api body shape).
 - Lint: `cargo clippy --all-targets -- -D warnings`.

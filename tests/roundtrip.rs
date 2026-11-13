@@ -12,6 +12,17 @@ const SCORE: &str = include_str!("fixtures/usage_v1_score.json");
 const PRIVACY_CLASSIFY: &str = include_str!("fixtures/usage_v1_privacy_classify.json");
 const AUDIO: &str = include_str!("fixtures/usage_v1_audio_transcription.json");
 
+/// Every v1 usage fixture with the `type` tag it must carry.
+const USAGE_FIXTURES: &[(&str, &str)] = &[
+    ("chat_completion", CHAT),
+    ("image_generation", IMAGE),
+    ("embedding", EMBEDDING),
+    ("rerank", RERANK),
+    ("score", SCORE),
+    ("privacy_classify", PRIVACY_CLASSIFY),
+    ("audio_transcription", AUDIO),
+];
+
 const EMITTED_AT: &str = "2026-10-20T12:00:00Z";
 
 fn report(body: &str) -> InternalUsageReport {
@@ -254,16 +265,33 @@ fn not_json_rejected() {
 /// must yield exactly the same keys and values: no optional or default-valued extras.
 #[test]
 fn body_matches_cloud_api_shape() {
-    for body in [CHAT, IMAGE, EMBEDDING, AUDIO] {
+    for (tag, body) in USAGE_FIXTURES {
         let fixture: Value = serde_json::from_str(body).unwrap();
         let out = serde_json::to_value(report(body)).unwrap();
-        assert_eq!(out, fixture);
+        assert_eq!(out, fixture, "{tag}");
+    }
+}
+
+/// The `usage` member of the encoded envelope is exactly the fixture: same tag, same keys,
+/// same values and number types, and nothing added.
+#[test]
+fn envelope_usage_is_exactly_the_fixture() {
+    for (tag, body) in USAGE_FIXTURES {
+        let fixture: Value = serde_json::from_str(body).unwrap();
+        assert_eq!(fixture["type"], *tag, "fixture tag");
+        let wire: Value = serde_json::from_str(
+            &envelope(report(body))
+                .try_to_json()
+                .expect("envelope encodes"),
+        )
+        .unwrap();
+        assert_eq!(wire["usage"], fixture, "{tag}");
     }
 }
 
 #[test]
 fn identity_fields_are_uuids() {
-    for body in [CHAT, IMAGE, EMBEDDING, AUDIO] {
+    for (_, body) in USAGE_FIXTURES {
         let v: Value = serde_json::from_str(body).unwrap();
         for key in ["organization_id", "workspace_id", "api_key_id"] {
             let s = v[key].as_str().unwrap();
