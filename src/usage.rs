@@ -85,6 +85,15 @@ pub enum RecordUsageApiRequest {
         #[serde(flatten)]
         provider_attribution: ProviderAttribution,
     },
+    /// Audio transcription, billed by audio duration.
+    AudioTranscription {
+        model: String,
+        /// Audio duration in whole seconds. The consumer validates positivity.
+        duration_seconds: i32,
+        id: String,
+        #[serde(flatten)]
+        provider_attribution: ProviderAttribution,
+    },
 }
 
 /// Which provider served a request. Serialized as `served_provider_*` keys.

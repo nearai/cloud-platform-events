@@ -10,6 +10,7 @@ const EMBEDDING: &str = include_str!("fixtures/usage_v1_embedding.json");
 const RERANK: &str = include_str!("fixtures/usage_v1_rerank.json");
 const SCORE: &str = include_str!("fixtures/usage_v1_score.json");
 const PRIVACY_CLASSIFY: &str = include_str!("fixtures/usage_v1_privacy_classify.json");
+const AUDIO: &str = include_str!("fixtures/usage_v1_audio_transcription.json");
 
 const EMITTED_AT: &str = "2026-10-20T12:00:00Z";
 
@@ -69,6 +70,47 @@ fn roundtrip_score() {
 #[test]
 fn roundtrip_privacy_classify() {
     assert_roundtrip(PRIVACY_CLASSIFY);
+}
+
+#[test]
+fn roundtrip_audio_transcription() {
+    assert_roundtrip(AUDIO);
+}
+
+#[test]
+fn audio_transcription_wire_shape() {
+    let wire: Value = serde_json::from_str(
+        &envelope(report(AUDIO))
+            .try_to_json()
+            .expect("envelope encodes"),
+    )
+    .unwrap();
+    assert_eq!(wire["usage"]["type"], "audio_transcription");
+    assert_eq!(wire["usage"]["duration_seconds"], json!(12));
+    assert!(wire["usage"].get("input_tokens").is_none());
+}
+
+#[test]
+fn audio_transcription_invalid_duration_is_malformed() {
+    let cases = [
+        ("string", Some(json!("12"))),
+        ("float", Some(json!(12.5))),
+        ("null", Some(json!(null))),
+        ("above_i32_max", Some(json!(2_147_483_648_i64))),
+        ("missing", None),
+    ];
+    for (name, duration) in cases {
+        let mut usage: Value = serde_json::from_str(AUDIO).unwrap();
+        match duration {
+            Some(value) => usage["duration_seconds"] = value,
+            None => {
+                usage.as_object_mut().unwrap().remove("duration_seconds");
+            }
+        }
+        let bytes = message_with(&[("usage", usage)], &[]);
+        let err = parse_message(&bytes).unwrap_err();
+        assert_eq!(err.class(), FailureClass::Malformed, "{name}: {err:?}");
+    }
 }
 
 #[test]
@@ -212,7 +254,7 @@ fn not_json_rejected() {
 /// must yield exactly the same keys and values: no optional or default-valued extras.
 #[test]
 fn body_matches_cloud_api_shape() {
-    for body in [CHAT, IMAGE, EMBEDDING] {
+    for body in [CHAT, IMAGE, EMBEDDING, AUDIO] {
         let fixture: Value = serde_json::from_str(body).unwrap();
         let out = serde_json::to_value(report(body)).unwrap();
         assert_eq!(out, fixture);
@@ -221,7 +263,7 @@ fn body_matches_cloud_api_shape() {
 
 #[test]
 fn identity_fields_are_uuids() {
-    for body in [CHAT, IMAGE, EMBEDDING] {
+    for body in [CHAT, IMAGE, EMBEDDING, AUDIO] {
         let v: Value = serde_json::from_str(body).unwrap();
         for key in ["organization_id", "workspace_id", "api_key_id"] {
             let s = v[key].as_str().unwrap();
