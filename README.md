@@ -9,13 +9,12 @@ Shared Rust types for usage reports and versioned message envelopes.
 
 ## Compatibility
 
-Version 2 adds the optional admission field and the transcription variant. Rust callers
-must initialize the added field and update exhaustive matches, so this is a major source
-API change. The JSON envelope remains version 1. The optional field is omitted when
+Version 2 adds the optional admission field. Rust callers must initialize the added
+field, so this is a major source API change. The JSON envelope remains version 1. The optional field is omitted when
 absent, preserving existing report serialization.
 
-Consumers must support the new variant to deserialize transcription events. Older
-readers can ignore the optional field, but cannot use it to correlate reservations.
+Transcription events use the variant introduced in version 1.2. Older readers can
+ignore the optional admission field, but cannot use it to correlate reservations.
 
 ## Validation
 
