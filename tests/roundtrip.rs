@@ -627,3 +627,27 @@ fn oversized_envelope_is_refused_with_length_only() {
         Err(EncodeError::EnvelopeTooLarge(expected_len))
     );
 }
+
+#[test]
+fn audio_roundtrip_preserves_seconds_and_rejects_wrong_units() {
+    assert_roundtrip(AUDIO);
+    let body: Value = serde_json::from_str(AUDIO).unwrap();
+    assert_eq!(serde_json::to_value(report(AUDIO)).unwrap(), body);
+    let mut tokens = body;
+    tokens.as_object_mut().unwrap().remove("duration_seconds");
+    tokens["input_tokens"] = json!(61);
+    assert!(serde_json::from_value::<InternalUsageReport>(tokens).is_err());
+}
+
+#[test]
+fn admission_identity_is_optional_and_separate_from_provider_identity() {
+    let mut value: Value = serde_json::from_str(CHAT).unwrap();
+    assert_eq!(report(CHAT).admission_id, None);
+    let provider_id = value["id"].clone();
+    value["admission_id"] = json!("23dfbf25-79aa-4408-bc76-5a907084e231");
+    assert_roundtrip(&value.to_string());
+    assert_eq!(
+        serde_json::to_value(report(&value.to_string())).unwrap()["id"],
+        provider_id
+    );
+}
