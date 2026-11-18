@@ -4,9 +4,9 @@
 
 use std::fmt;
 
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
+use time::{format_description::well_known::Rfc3339, UtcDateTime};
 
 use crate::usage::InternalUsageReport;
 
@@ -35,7 +35,7 @@ pub enum Producer {
 pub struct UsageEnvelope {
     pub v: u16,
     pub producer: Producer,
-    pub emitted_at: DateTime<Utc>,
+    pub emitted_at: UtcDateTime,
     pub usage: InternalUsageReport,
 }
 
@@ -184,14 +184,17 @@ impl UsageEnvelope {
             ty: &'static str,
             v: u16,
             producer: Producer,
-            emitted_at: &'a DateTime<Utc>,
+            emitted_at: String,
             usage: &'a InternalUsageReport,
         }
         let json = serde_json::to_string(&Wire {
             ty: USAGE_TYPE,
             v: self.v,
             producer: self.producer,
-            emitted_at: &self.emitted_at,
+            emitted_at: self
+                .emitted_at
+                .format(&Rfc3339)
+                .map_err(|_| EncodeError::Serialize)?,
             usage: &self.usage,
         })
         .map_err(|_| EncodeError::Serialize)?;
@@ -238,8 +241,13 @@ fn read_current(obj: &Map<String, Value>, v: u16) -> Result<ParsedMessage, Envel
     let field = |name: &'static str| obj.get(name).ok_or(EnvelopeError::MissingField(name));
     let producer = Producer::deserialize(field("producer")?)
         .map_err(|_| EnvelopeError::InvalidField("producer"))?;
-    let emitted_at = DateTime::<Utc>::deserialize(field("emitted_at")?)
-        .map_err(|_| EnvelopeError::InvalidField("emitted_at"))?;
+    let emitted_at = UtcDateTime::parse(
+        field("emitted_at")?
+            .as_str()
+            .ok_or(EnvelopeError::InvalidField("emitted_at"))?,
+        &Rfc3339,
+    )
+    .map_err(|_| EnvelopeError::InvalidField("emitted_at"))?;
     let usage = InternalUsageReport::deserialize(field("usage")?)?;
     Ok(ParsedMessage::Usage(UsageEnvelope {
         v,

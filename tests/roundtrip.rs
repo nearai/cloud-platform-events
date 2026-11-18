@@ -33,7 +33,11 @@ fn envelope(usage: InternalUsageReport) -> UsageEnvelope {
     UsageEnvelope {
         v: CURRENT_USAGE_VERSION,
         producer: Producer::OpenrouterGateway,
-        emitted_at: EMITTED_AT.parse().unwrap(),
+        emitted_at: time::UtcDateTime::parse(
+            EMITTED_AT,
+            &time::format_description::well_known::Rfc3339,
+        )
+        .unwrap(),
         usage,
     }
 }
@@ -650,4 +654,15 @@ fn admission_identity_is_optional_and_separate_from_provider_identity() {
         serde_json::to_value(report(&value.to_string())).unwrap()["id"],
         provider_id
     );
+}
+
+#[test]
+fn emitted_at_normalizes_offset_and_preserves_nanoseconds() {
+    let bytes = message_with(
+        &[("emitted_at", json!("2026-10-20T14:00:00.123456789+02:00"))],
+        &[],
+    );
+    let encoded = expect_usage(&bytes).try_to_json().unwrap();
+    let wire: Value = serde_json::from_str(&encoded).unwrap();
+    assert_eq!(wire["emitted_at"], "2026-10-20T12:00:00.123456789Z");
 }
