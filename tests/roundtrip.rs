@@ -511,11 +511,17 @@ fn missing_envelope_fields_are_named() {
 
 #[test]
 fn wrong_typed_envelope_fields_are_invalid_not_json_errors() {
-    let bytes = message_with(&[("emitted_at", json!(12345))], &[]);
-    assert!(matches!(
-        parse_message(&bytes),
-        Err(EnvelopeError::InvalidField("emitted_at"))
-    ));
+    for invalid in [
+        json!(12345),
+        json!("2026-10-20X12:00:00Z"),
+        json!("-000001-01-01T00:00:00Z"),
+    ] {
+        let bytes = message_with(&[("emitted_at", invalid)], &[]);
+        assert!(matches!(
+            parse_message(&bytes),
+            Err(EnvelopeError::InvalidField("emitted_at"))
+        ));
+    }
     let bytes = message_with(&[("producer", json!(["x"]))], &[]);
     assert!(matches!(
         parse_message(&bytes),
@@ -650,4 +656,18 @@ fn admission_identity_is_optional_and_separate_from_provider_identity() {
         serde_json::to_value(report(&value.to_string())).unwrap()["id"],
         provider_id
     );
+}
+
+#[test]
+fn emitted_at_normalizes_offset_and_preserves_nanoseconds() {
+    let bytes = message_with(
+        &[(
+            "emitted_at",
+            json!("2026-10-20T14:00:00.123456789+02:00[Europe/Paris]"),
+        )],
+        &[],
+    );
+    let encoded = expect_usage(&bytes).try_to_json().unwrap();
+    let wire: Value = serde_json::from_str(&encoded).unwrap();
+    assert_eq!(wire["emitted_at"], "2026-10-20T12:00:00.123456789Z");
 }

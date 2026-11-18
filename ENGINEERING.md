@@ -14,7 +14,7 @@ rule that binds this crate is stated there or here.
 
 | Owner | Owns | Interface others use | Never does |
 |---|---|---|---|
-| `cloud-platform-events` (this crate) | The envelope, the `type` and `v` of each message, the producer enum, each payload type, the tolerant reader | `UsageEnvelope`, `Producer`, `ParsedMessage`, `EnvelopeError`, `parse_message`, `CURRENT_USAGE_VERSION`, `InternalUsageReport` and the other payload types | Any I/O. Business logic. Free-text fields taken from requests or responses. Dependencies beyond `chrono`, `serde`, `serde_json` (`uuid` for tests only) |
+| `cloud-platform-events` (this crate) | The envelope, the `type` and `v` of each message, the producer enum, each payload type, the tolerant reader | `UsageEnvelope`, `Producer`, `ParsedMessage`, `EnvelopeError`, `parse_message`, `CURRENT_USAGE_VERSION`, `InternalUsageReport` and the other payload types | Any I/O. Business logic. Free-text fields taken from requests or responses. Dependencies beyond `jiff`, `serde`, `serde_json` (`uuid` for tests only) |
 | cloud-api, the request type (`crates/api/src/routes/usage.rs`) | Its own HTTP request type and the HTTP body builder | The same JSON value (field names, types and values), checked by a contract test | Changing the payload here without the contract test |
 
 The crate has no other owner. A second type with the same meaning elsewhere is a finding.
@@ -73,7 +73,7 @@ position, never the input text.
 
 ## 5. Dependencies
 
-- Runtime: `chrono` (with `serde`), `serde`, `serde_json`. Dev: `uuid`.
+- Runtime: `jiff` (RFC 3339 parsing and formatting), `serde`, `serde_json`. Dev: `uuid`.
 - Adding any dependency needs a sentence in the change saying what it replaces. A dependency that
   performs I/O is not accepted.
 

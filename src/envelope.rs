@@ -4,7 +4,7 @@
 
 use std::fmt;
 
-use chrono::{DateTime, Utc};
+use jiff::Timestamp;
 use serde::{Deserialize, Serialize};
 use serde_json::{Map, Value};
 
@@ -35,7 +35,7 @@ pub enum Producer {
 pub struct UsageEnvelope {
     pub v: u16,
     pub producer: Producer,
-    pub emitted_at: DateTime<Utc>,
+    pub emitted_at: Timestamp,
     pub usage: InternalUsageReport,
 }
 
@@ -174,6 +174,11 @@ impl fmt::Display for EncodeError {
 
 impl std::error::Error for EncodeError {}
 
+// RFC 3339 output requires a four-digit UTC year.
+fn has_wire_year(timestamp: Timestamp) -> bool {
+    timestamp.to_zoned(jiff::tz::TimeZone::UTC).year() >= 0
+}
+
 impl UsageEnvelope {
     /// Serialize to the wire format, with `"type":"usage"`. Fails if the result is longer
     /// than [`MAX_ENVELOPE_BYTES`].
@@ -184,14 +189,17 @@ impl UsageEnvelope {
             ty: &'static str,
             v: u16,
             producer: Producer,
-            emitted_at: &'a DateTime<Utc>,
+            emitted_at: String,
             usage: &'a InternalUsageReport,
+        }
+        if !has_wire_year(self.emitted_at) {
+            return Err(EncodeError::Serialize);
         }
         let json = serde_json::to_string(&Wire {
             ty: USAGE_TYPE,
             v: self.v,
             producer: self.producer,
-            emitted_at: &self.emitted_at,
+            emitted_at: self.emitted_at.to_string(),
             usage: &self.usage,
         })
         .map_err(|_| EncodeError::Serialize)?;
@@ -238,8 +246,14 @@ fn read_current(obj: &Map<String, Value>, v: u16) -> Result<ParsedMessage, Envel
     let field = |name: &'static str| obj.get(name).ok_or(EnvelopeError::MissingField(name));
     let producer = Producer::deserialize(field("producer")?)
         .map_err(|_| EnvelopeError::InvalidField("producer"))?;
-    let emitted_at = DateTime::<Utc>::deserialize(field("emitted_at")?)
+    let emitted_at = field("emitted_at")?
+        .as_str()
+        .ok_or(EnvelopeError::InvalidField("emitted_at"))?
+        .parse::<Timestamp>()
         .map_err(|_| EnvelopeError::InvalidField("emitted_at"))?;
+    if !has_wire_year(emitted_at) {
+        return Err(EnvelopeError::InvalidField("emitted_at"));
+    }
     let usage = InternalUsageReport::deserialize(field("usage")?)?;
     Ok(ParsedMessage::Usage(UsageEnvelope {
         v,
