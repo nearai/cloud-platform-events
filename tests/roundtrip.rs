@@ -33,11 +33,7 @@ fn envelope(usage: InternalUsageReport) -> UsageEnvelope {
     UsageEnvelope {
         v: CURRENT_USAGE_VERSION,
         producer: Producer::OpenrouterGateway,
-        emitted_at: time::UtcDateTime::parse(
-            EMITTED_AT,
-            &time::format_description::well_known::Rfc3339,
-        )
-        .unwrap(),
+        emitted_at: EMITTED_AT.parse().unwrap(),
         usage,
     }
 }
@@ -515,7 +511,11 @@ fn missing_envelope_fields_are_named() {
 
 #[test]
 fn wrong_typed_envelope_fields_are_invalid_not_json_errors() {
-    for invalid in [json!(12345), json!("2026-10-20X12:00:00Z")] {
+    for invalid in [
+        json!(12345),
+        json!("2026-10-20X12:00:00Z"),
+        json!("-000001-01-01T00:00:00Z"),
+    ] {
         let bytes = message_with(&[("emitted_at", invalid)], &[]);
         assert!(matches!(
             parse_message(&bytes),
@@ -661,7 +661,10 @@ fn admission_identity_is_optional_and_separate_from_provider_identity() {
 #[test]
 fn emitted_at_normalizes_offset_and_preserves_nanoseconds() {
     let bytes = message_with(
-        &[("emitted_at", json!("2026-10-20T14:00:00.123456789+02:00"))],
+        &[(
+            "emitted_at",
+            json!("2026-10-20T14:00:00.123456789+02:00[Europe/Paris]"),
+        )],
         &[],
     );
     let encoded = expect_usage(&bytes).try_to_json().unwrap();
