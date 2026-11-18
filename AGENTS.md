@@ -32,6 +32,6 @@ The reasoning for a version belongs in the pull request that introduces it.
 - Do not write a plan file into this repository. Write it to scratch space and put the summary in
   the pull request body.
 - Do not move or re-create a published tag. A schema version is a tag; a new layout is a new version.
-- Do not add a dependency. The crate depends on `time`, `serde` and `serde_json`, and on `uuid`
+- Do not add a dependency. The crate depends on `jiff`, `serde` and `serde_json`, and on `uuid`
   for tests only.
 - The repository has no remote. Do not push, and do not add a remote.
