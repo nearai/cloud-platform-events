@@ -515,11 +515,13 @@ fn missing_envelope_fields_are_named() {
 
 #[test]
 fn wrong_typed_envelope_fields_are_invalid_not_json_errors() {
-    let bytes = message_with(&[("emitted_at", json!(12345))], &[]);
-    assert!(matches!(
-        parse_message(&bytes),
-        Err(EnvelopeError::InvalidField("emitted_at"))
-    ));
+    for invalid in [json!(12345), json!("2026-10-20X12:00:00Z")] {
+        let bytes = message_with(&[("emitted_at", invalid)], &[]);
+        assert!(matches!(
+            parse_message(&bytes),
+            Err(EnvelopeError::InvalidField("emitted_at"))
+        ));
+    }
     let bytes = message_with(&[("producer", json!(["x"]))], &[]);
     assert!(matches!(
         parse_message(&bytes),

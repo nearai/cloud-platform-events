@@ -244,6 +244,7 @@ fn read_current(obj: &Map<String, Value>, v: u16) -> Result<ParsedMessage, Envel
     let emitted_at = UtcDateTime::parse(
         field("emitted_at")?
             .as_str()
+            .filter(|value| matches!(value.as_bytes().get(10), Some(b'T' | b't' | b' ')))
             .ok_or(EnvelopeError::InvalidField("emitted_at"))?,
         &Rfc3339,
     )
