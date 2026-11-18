@@ -176,7 +176,7 @@ impl std::error::Error for EncodeError {}
 
 // RFC 3339 output requires a four-digit UTC year.
 fn has_wire_year(timestamp: Timestamp) -> bool {
-    timestamp.to_zoned_datetime(jiff::tz::TimeZone::UTC).year() >= 0
+    timestamp.to_zoned(jiff::tz::TimeZone::UTC).year() >= 0
 }
 
 impl UsageEnvelope {
